@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="../MaxiMiniWeb/css/style.css">
+    <title>MaxiMiniWeb</title>
+    <style>
+        /* Fondo de video */
+        .hero_area video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* Barra de navegación */
+        .header_section {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .navbar a, .navbar-brand {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+
+        .navbar a:hover {
+            color: #12f399;
+        }
+
+        /* Estilo del formulario */
+        form {
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            margin-top: 100px;
+            border-radius: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            color: white;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0 20px;
+            border: 1px solid #12f399;
+            border-radius: 5px;
+            background: transparent;
+            color: rgb(245, 242, 242);
+            font-size: 1rem;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #fff;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #12f399;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0a9e76;
+        }
+
+        /* Footer */
+        footer {
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fondo de video -->
+    <div class="hero_area">
+        <video autoplay loop muted>
+            <source src="FondoTecnologico.mp4" type="video/mp4">
+        </video>
+
+        <!-- Navbar -->
+        <header class="header_section">
+            <div class="container-fluid">
+                <nav class="navbar navbar-expand-lg custom_nav-container">
+                    <a class="navbar-brand" href="index.html">
+                        <span>Inicio</span>
+                    </a>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent"></div>
+                    <span class="navbar-brand" id="cls">INGRESA LOS DATOS DEL PROBLEMA</span>
+                </nav>
+            </div>
+        </header>
+    </div>
+
+    <!-- Formulario -->
+    <form id="input-form">
+        <div id="objective-function"></div>
+
+        <h2>Restricciones</h2>
+        <div id="constraints"></div>
+
+        <button id="btnsubmit" type="submit">Calcular</button>
+    </form>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 MaxiMiniWeb. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const numVars = parseInt(params.get('numVars'));
+        const numConstraints = parseInt(params.get('numConstraints'));
+        const optimization = params.get('optimization');
+
+        const formDiv = document.getElementById('input-form');
+        const c = formDiv.innerHTML;
+        let objHTML = '<h2>Función Objetivo</h2><table id="gg"><tr>';
+        for (let i = 0; i < numVars; i++) {
+            objHTML += `
+                <th>
+                    <label for="obj_coef_${i}"> <input class="names" value='X${i + 1}'></label>
+                </th>
+            `;
+        }
+        objHTML += '</tr></table>';
+        formDiv.innerHTML = objHTML + c;
+        const objectiveDiv = document.getElementById('objective-function');
+
+        objHTML = '<table><tr>';
+        for (let i = 0; i < numVars; i++) {
+            objHTML += `
+                <td>
+                    <input type="number" id="obj_coef_${i}" step="any" name="obj_coef_${i}" required>
+                </td>
+            `;
+        }
+        objHTML += '</tr></table>';
+        objectiveDiv.innerHTML = objHTML;
+        const constraintsDiv = document.getElementById('constraints');
+        let constrHTML = '<table>';
+        for (let i = 0; i < numConstraints; i++) {
+            constrHTML += '<tr>';
+            for (let j = 0; j < numVars; j++) {
+                constrHTML += `
+                    <td>
+                        <input type="number" step="any" name="constr_${i}_coef_${j}" required>
+                    </td>
+                `;
+            }
+            constrHTML += `
+                <td>
+                    <select name="constr_${i}_sign">
+                        <option value="<=">&le;</option>
+                        <option value=">=">&ge;</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="any" name="constr_${i}_value" required>
+                </td>
+            `;
+            constrHTML += '</tr>';
+        }
+        constrHTML += '</table>';
+        constraintsDiv.innerHTML = constrHTML;
+
+        // Manejar el envío del formulario
+        document.getElementById('input-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {
+                numVars,
+                numConstraints,
+                optimization,
+                objective: [],
+                constraints: []
+            };
+            for (let i = 0; i < numVars; i++) {
+                data.objective.push(parseFloat(formData.get(`obj_coef_${i}`)));
+            }
+
+            for (let i = 0; i < numConstraints; i++) {
+                const constraint = {
+                    coefficients: [],
+                    sign: formData.get(`constr_${i}_sign`),
+                    value: parseFloat(formData.get(`constr_${i}_value`))
+                };
+                for (let j = 0; j < numVars; j++) {
+                    constraint.coefficients.push(parseFloat(formData.get(`constr_${i}_coef_${j}`)));
+                }
+                data.constraints.push(constraint);
+            }
+
+            const targetPage = optimization === 'Maximizar'
+                ? 'resMax.html'
+                : 'resMin.html';
+
+            localStorage.setItem('lp_data', JSON.stringify(data));
+            window.location.href = targetPage;
+        });
+    </script>
+
+</body>
+</html>
